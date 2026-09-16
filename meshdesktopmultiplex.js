@@ -295,6 +295,7 @@ function CreateDesktopMultiplexor(parent, domain, nodeid, id, func) {
                 var event = { etype: 'relay', action: 'relaylog', domain: domain.id, nodeid: obj.nodeid, msgid: 144, msgArgs: [obj.id, sessionSeconds], msg: "Left the desktop multiplex session \"" + obj.id + "\" after " + sessionSeconds + " second(s).", protocol: 2, bytesin: inTraffc, bytesout: outTraffc };
                 if (peer.user != null) { event.userid = peer.user._id; event.username = peer.user.name; }
                 if (peer.guestName) { event.guestname = peer.guestName; }
+                if (peer.pid) { event.publicid = peer.pid; } // If this is a sharing session, set the device share id here.
                 const targets = ['*', obj.nodeid, obj.meshid];
                 if (peer.user != null) { targets.push(peer.user._id); }
                 parent.parent.DispatchEvent(targets, obj, event);
