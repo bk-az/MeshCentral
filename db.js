@@ -1713,6 +1713,15 @@ module.exports.CreateDB = function (parent, func) {
                 });
             };
             obj.isMaxType = function (max, type, domainid, func) { if (max == null) { func(false); } else { sqlDbExec('SELECT COUNT(id) FROM main WHERE domain = $1 AND type = $2', [domainid, type], function (err, response) { func((response['COUNT(id)'] == null) || (response['COUNT(id)'] > max), response['COUNT(id)']) }); } }
+            // Return true if the number of devices in a given device group is at or above the given limit
+            obj.isMaxNodesInMesh = function (max, meshid, domainid, func) {
+                if (max == null) { func(false); return; }
+                sqlDbQuery('SELECT COUNT(doc) FROM main WHERE type = $1 AND domain = $2 AND extra = $3', ['node', domainid, meshid], function (err, docs) {
+                    var count = null;
+                    if (err == null) { if (typeof docs == 'number') { count = docs; } else if ((docs != null) && (docs.length == 1)) { count = parseInt(docs[0]['COUNT(doc)']); } }
+                    if ((count == null) || isNaN(count)) { func(true); } else { func(count >= max, count); }
+                });
+            };
 
             // Database actions on the events collection
             obj.GetAllEvents = function (func) {
@@ -1972,6 +1981,8 @@ module.exports.CreateDB = function (parent, func) {
             obj.getLocalAmtNodes = function (func) { obj.file.query('meshcentral').filter('type', '==', 'node').filter('host', 'exists').filter('host', '!=', null).filter('intelamt', 'exists').get(function (snapshots) { const docs = []; for (var i in snapshots) { docs.push(snapshots[i].val()); } func(null, performTypedRecordDecrypt(docs)); }); };
             obj.getAmtUuidMeshNode = function (domainid, mtype, uuid, func) { obj.file.query('meshcentral').filter('type', '==', 'node').filter('domain', '==', domainid).filter('mtype', '!=', mtype).filter('intelamt.uuid', '==', uuid).get(function (snapshots) { const docs = []; for (var i in snapshots) { docs.push(snapshots[i].val()); } func(null, performTypedRecordDecrypt(docs)); }); };
             obj.isMaxType = function (max, type, domainid, func) { if (max == null) { func(false); } else { obj.file.query('meshcentral').filter('type', '==', type).filter('domain', '==', domainid).get({ snapshots: false }, function (snapshots) { func((snapshots.length > max), snapshots.length); }); } }
+            // Return true if the number of devices in a given device group is at or above the given limit
+            obj.isMaxNodesInMesh = function (max, meshid, domainid, func) { if (max == null) { func(false); } else { obj.file.query('meshcentral').filter('type', '==', 'node').filter('domain', '==', domainid).filter('meshid', '==', meshid).get({ snapshots: false }, function (snapshots) { func((snapshots.length >= max), snapshots.length); }); } }
 
             // Database actions on the events collection
             obj.GetAllEvents = function (func) { 
@@ -2254,6 +2265,15 @@ module.exports.CreateDB = function (parent, func) {
             obj.getLocalAmtNodes = function (func) { sqlDbQuery('SELECT doc FROM main WHERE (type = \'node\') AND (extraex IS NULL)', null, function (err, docs) { var r = []; if (err == null) { for (var i in docs) { if (docs[i].host != null && docs[i].intelamt != null) { r.push(docs[i]); } } } func(err, r); }); };
             obj.getAmtUuidMeshNode = function (domainid, mtype, uuid, func) { sqlDbQuery('SELECT doc FROM main WHERE domain = $1 AND extraex = $2', [domainid, 'uuid/' + uuid], func); };
             obj.isMaxType = function (max, type, domainid, func) { if (max == null) { func(false); } else { sqlDbExec('SELECT COUNT(id) FROM main WHERE domain = $1 AND type = $2', [domainid, type], function (err, response) { func((response['COUNT(id)'] == null) || (response['COUNT(id)'] > max), response['COUNT(id)']) }); } }
+            // Return true if the number of devices in a given device group is at or above the given limit
+            obj.isMaxNodesInMesh = function (max, meshid, domainid, func) {
+                if (max == null) { func(false); return; }
+                sqlDbQuery('SELECT COUNT(doc) FROM main WHERE type = $1 AND domain = $2 AND extra = $3', ['node', domainid, meshid], function (err, docs) {
+                    var count = null;
+                    if (err == null) { if (typeof docs == 'number') { count = docs; } else if ((docs != null) && (docs.length == 1)) { count = parseInt(docs[0]['COUNT(doc)']); } }
+                    if ((count == null) || isNaN(count)) { func(true); } else { func(count >= max, count); }
+                });
+            };
 
             // Database actions on the events collection
             obj.GetAllEvents = function (func) { sqlDbQuery('SELECT doc FROM events', null, func); };
@@ -2513,6 +2533,15 @@ module.exports.CreateDB = function (parent, func) {
             obj.getLocalAmtNodes = function (func) { sqlDbQuery('SELECT doc FROM main WHERE (type = "node") AND (extraex IS NULL)', null, function (err, docs) { var r = []; if (err == null) { for (var i in docs) { if (docs[i].host != null && docs[i].intelamt != null) { r.push(docs[i]); } } } func(err, r); }); };
             obj.getAmtUuidMeshNode = function (domainid, mtype, uuid, func) { sqlDbQuery('SELECT doc FROM main WHERE domain = ? AND extraex = ?', [domainid, 'uuid/' + uuid], func); };
             obj.isMaxType = function (max, type, domainid, func) { if (max == null) { func(false); } else { sqlDbExec('SELECT COUNT(id) FROM main WHERE domain = ? AND type = ?', [domainid, type], function (err, response) { func((response['COUNT(id)'] == null) || (response['COUNT(id)'] > max), response['COUNT(id)']) }); } }
+            // Return true if the number of devices in a given device group is at or above the given limit
+            obj.isMaxNodesInMesh = function (max, meshid, domainid, func) {
+                if (max == null) { func(false); return; }
+                sqlDbQuery('SELECT COUNT(doc) FROM main WHERE type = ? AND domain = ? AND extra = ?', ['node', domainid, meshid], function (err, docs) {
+                    var count = null;
+                    if (err == null) { if (typeof docs == 'number') { count = docs; } else if ((docs != null) && (docs.length == 1)) { count = parseInt(docs[0]['COUNT(doc)']); } }
+                    if ((count == null) || isNaN(count)) { func(true); } else { func(count >= max, count); }
+                });
+            };
 
             // Database actions on the events collection
             obj.GetAllEvents = function (func) { sqlDbQuery('SELECT doc FROM events', null, func); };
@@ -2859,6 +2888,16 @@ module.exports.CreateDB = function (parent, func) {
                     if (max == null) { func(false); } else { obj.file.count({ type: type, domain: domainid }, function (err, count) { func((err != null) || (count > max), count); }); }
                 }
             }
+            // Return true if the number of devices in a given device group is at or above the given limit
+            obj.isMaxNodesInMesh = function (max, meshid, domainid, func) {
+                if (max == null) { func(false); return; }
+                const x = { type: 'node', domain: domainid, meshid: meshid };
+                if (obj.file.countDocuments) {
+                    obj.file.countDocuments(x, function (err, count) { func((err != null) || (count >= max), count); });
+                } else {
+                    obj.file.count(x, function (err, count) { func((err != null) || (count >= max), count); });
+                }
+            }
 
             // Database actions on the events collection
             obj.GetAllEvents = function (func) { obj.eventsfile.find({}).toArray(func); };
@@ -3086,6 +3125,8 @@ module.exports.CreateDB = function (parent, func) {
             obj.getLocalAmtNodes = function (func) { obj.file.find({ type: 'node', host: { $exists: true, $ne: null }, intelamt: { $exists: true } }, func); };
             obj.getAmtUuidMeshNode = function (domainid, mtype, uuid, func) { obj.file.find({ type: 'node', domain: domainid, mtype: mtype, 'intelamt.uuid': uuid }, func); };
             obj.isMaxType = function (max, type, domainid, func) { if (max == null) { func(false); } else { obj.file.count({ type: type, domain: domainid }, function (err, count) { func((err != null) || (count > max), count); }); } }
+            // Return true if the number of devices in a given device group is at or above the given limit
+            obj.isMaxNodesInMesh = function (max, meshid, domainid, func) { if (max == null) { func(false); } else { obj.file.count({ type: 'node', domain: domainid, meshid: meshid }, function (err, count) { func((err != null) || (count >= max), count); }); } }
 
             // Database actions on the events collection
             obj.GetAllEvents = function (func) { obj.eventsfile.find({}, func); };

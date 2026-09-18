@@ -3599,7 +3599,7 @@
 
                                 // This is a new mesh for us
                                 if (add) {
-                                    meshes[message.event.meshid] = { _id: message.event.meshid, name: message.event.name, mtype: message.event.mtype, desc: message.event.desc, links: message.event.links, amt: message.event.amt, invite: message.event.invite, expireDevs: message.event.expireDevs, relayid: message.event.relayid };
+                                    meshes[message.event.meshid] = { _id: message.event.meshid, name: message.event.name, mtype: message.event.mtype, desc: message.event.desc, links: message.event.links, amt: message.event.amt, invite: message.event.invite, expireDevs: message.event.expireDevs, devicelimit: message.event.devicelimit, relayid: message.event.relayid };
                                     meshserver.send({ action: 'nodes', skip: (devicePagingState == null) ? 0 : devicePagingState.skip }); // Request a refresh of all nodes (TODO: We could optimize this to only request nodes for the new mesh).
                                 }
                             } else {
@@ -3615,6 +3615,7 @@
                                 if (message.event.amt) { meshes[message.event.meshid].amt = message.event.amt; }
                                 if (message.event.invite != null) { meshes[message.event.meshid].invite = message.event.invite; } else { delete meshes[message.event.meshid].invite; }
                                 if (message.event.expireDevs != null) { if (message.event.expireDevs > 0) { meshes[message.event.meshid].expireDevs = message.event.expireDevs; } else { delete meshes[message.event.meshid].expireDevs; } }
+                                if (message.event.devicelimit != null) { if (message.event.devicelimit > 0) { meshes[message.event.meshid].devicelimit = message.event.devicelimit; } else { delete meshes[message.event.meshid].devicelimit; } }
                                 if (message.event.relayid != null) { meshes[message.event.meshid].relayid = message.event.relayid; }
 
                                 // Check if we lost rights to this mesh in this change.
@@ -15031,6 +15032,7 @@
                     if ((serverinfo.devGroupSessionRecording == 1) && (currentMesh.flags & 4)) { meshFeatures.push("Record Sessions"); }
                 }
                 if ((typeof currentMesh.expireDevs == 'number') && (currentMesh.expireDevs > 0)) { meshFeatures.push("Remove inactive"); }
+                if ((currentMesh.mtype == 2) && (typeof currentMesh.devicelimit == 'number') && (currentMesh.devicelimit > 0)) { meshFeatures.push(format("Device limit: {0}", currentMesh.devicelimit)); }
                 meshFeatures = meshFeatures.join(', ');
                 if (meshFeatures == '') { meshFeatures = '<i>' + "None" + '</i>'; }
                 x += addHtmlValue("Features", addLinkConditional(meshFeatures, 'p20editmeshfeatures()', meshrights & 1));
@@ -15512,8 +15514,9 @@
 
         function p20editmeshfeatures() {
             if (xxdialogMode) return;
-            var flags = (currentMesh.flags)?currentMesh.flags:0, x = '', expire = 0;
+            var flags = (currentMesh.flags)?currentMesh.flags:0, x = '', expire = 0, devicelimit = 0;
             if ((typeof currentMesh.expireDevs == 'number') && (currentMesh.expireDevs > 0)) { expire = currentMesh.expireDevs; if (expire > 2000) { expire = 2000; } }
+            if ((typeof currentMesh.devicelimit == 'number') && (currentMesh.devicelimit > 0)) { devicelimit = currentMesh.devicelimit; if (devicelimit > 1000000) { devicelimit = 1000000; } }
             if ((serverinfo.devGroupSessionRecording == 1) && (currentMesh.mtype != 4)) {
                 x += '<div><label><input type=checkbox id=d20flag4 onchange=p20editmeshfeaturesValidate() ' + ((flags & 4) ? 'checked' : '') + '>' + "Record sessions" + '</label><br></div>';
             }
@@ -15524,6 +15527,11 @@
                     x += '<div style="margin-left:8px"><label><input type=checkbox id=d20flag16 onchange=p20editmeshfeaturesValidate() ' + ((flags & 16) ? 'checked' : '') + '>' + "Allow to override server device name until next connection" + '</label><br></div>';
                 }
                 x += '<div><label><input type=checkbox id=d20flag1 onchange=p20editmeshfeaturesValidate() ' + ((flags & 1) ? 'checked' : '') + '>' + "Remove device on disconnect" + '</label><br></div>';
+            }
+            if (currentMesh.mtype == 2) {
+                x += '<div><label><input type=checkbox id=d20deviceLimit onchange=p20editmeshfeaturesValidate() ' + ((devicelimit > 0) ? 'checked' : '') + '>' + "Limit the number of devices in this group" + '</label><br></div>';
+                x += '<div style=margin-left:20px id=d20deviceLimitDev>' + "Maximum number of devices" + ' <label><input type=number inputmode=numeric onchange=p20editmeshfeaturesValidate() onkeyup=p20editmeshfeaturesValidate() onpaste=p20editmeshfeaturesValidate() onkeydown=p20editmeshfeaturesValidate() maxlength=7 min=1 max=1000000 style=width:80px value=\"' + ((devicelimit == 0)?10:devicelimit) + '\" id=d20deviceLimitCount></label><br></div>';
+                x += '<div style=font-size:x-small;margin-left:6px>' + "New devices will not be added to this group once the limit is reached. Devices already in the group are not affected." + '</div>';
             }
             x += '<div><label><input type=checkbox id=d20expireDevice onchange=p20editmeshfeaturesValidate() ' + ((expire > 0) ? 'checked' : '') + '>' + "Automatically remove inactive devices" + '</label><br></div>';
             x += '<div style=margin-left:20px id=d20expireDeviceDev>' + "Inactivate days until removal" + ' <label><input type=number inputmode=numeric onchange=p20editmeshfeaturesValidate() onkeyup=p20editmeshfeaturesValidate() onpaste=p20editmeshfeaturesValidate() onkeydown=p20editmeshfeaturesValidate() maxlength=4 min=1 max=2000 style=width:80px value=\"' + ((expire == 0)?30:expire) + '\" id=d20expireDeviceDays></label><br></div>';
@@ -15557,6 +15565,11 @@
             var x = ((flags & 1) == 0) && Q('d20expireDevice').checked;
             QV('d20expireDeviceDev', x);
             if (x) { var y = parseInt(Q('d20expireDeviceDays').value); if (isNaN(y) || (y < 1) || (y > 2000) || (y != Q('d20expireDeviceDays').value)) { ok = false; } }
+            if (currentMesh.mtype == 2) {
+                var z = Q('d20deviceLimit').checked;
+                QV('d20deviceLimitDev', z);
+                if (z) { var w = parseInt(Q('d20deviceLimitCount').value); if (isNaN(w) || (w < 1) || (w > 1000000) || (w != Q('d20deviceLimitCount').value)) { ok = false; } }
+            }
             QE('idx_dlgOkButton', ok);
         }
 
@@ -15571,7 +15584,9 @@
             if ((serverinfo.devGroupSessionRecording == 1) && (currentMesh.mtype != 4)) { if (Q('d20flag4').checked) { flags += 4; } }
             var expireDevs = 0;
             if (((flags & 1) == 0) && Q('d20expireDevice').checked) { expireDevs = parseInt(Q('d20expireDeviceDays').value); }
-            meshserver.send({ action: 'editmesh', meshid: currentMesh._id, flags: flags, expireDevs: expireDevs });
+            var devicelimit = 0;
+            if ((currentMesh.mtype == 2) && Q('d20deviceLimit').checked) { devicelimit = parseInt(Q('d20deviceLimitCount').value); }
+            meshserver.send({ action: 'editmesh', meshid: currentMesh._id, flags: flags, expireDevs: expireDevs, devicelimit: devicelimit });
         }
 
         function p20showAddMeshUserDialog(userid, selected) {

@@ -440,6 +440,7 @@ module.exports.CreateWebServer = function (parent, db, args, certificates, doneF
         invalidMeshType2Count: 0,
         duplicateAgentCount: 0,
         maxDomainDevicesReached: 0,
+        maxMeshDevicesReached: 0,
         agentInTrouble: 0,
         agentInBigTrouble: 0
     }

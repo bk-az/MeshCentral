@@ -864,6 +864,25 @@ module.exports.CreateMeshAgent = function (parent, db, ws, req, args, domain) {
             return;
         }
 
+        // Check if this device group is already at its device limit, if so, don't accept this new device.
+        if ((typeof mesh.devicelimit == 'number') && (mesh.devicelimit > 0) && (typeof db.isMaxNodesInMesh == 'function')) {
+            db.isMaxNodesInMesh(mesh.devicelimit, obj.dbMeshKey, domain.id, function (ismax, count) {
+                if (obj.agentInfo == null) { return; } // The agent disconnected while we were checking the device count
+                if (ismax == true) {
+                    // Too many devices in this device group. If we disconnect, the agent will just reconnect, so hold the connection.
+                    parent.agentStats.maxMeshDevicesReached++;
+                    parent.setAgentIssue(obj, 'maxMeshDevicesReached');
+                    parent.parent.debug('agent', 'Agent connected to a device group at its device limit (' + count + '/' + mesh.devicelimit + '), holding connection (' + obj.remoteaddrport + ', ' + obj.dbMeshKey + ').');
+                    return;
+                }
+                completeAgentConnection2ex(mesh);
+            });
+        } else {
+            completeAgentConnection2ex(mesh);
+        }
+    }
+
+    function completeAgentConnection2ex(mesh) {
         // Mark when this device connected
         obj.connectTime = Date.now();
 

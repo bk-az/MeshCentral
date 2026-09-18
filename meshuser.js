@@ -2400,6 +2400,7 @@ module.exports.CreateMeshUser = function (parent, db, ws, req, args, domain, use
                     if ((common.validateInt(command.flags) == true) && (command.flags != mesh.flags)) { if (change != '') change += ' and flags changed'; else change += 'Device group "' + mesh.name + '" flags changed'; changesids.push(3); mesh.flags = command.flags; }
                     if ((common.validateInt(command.consent) == true) && (command.consent != mesh.consent)) { if (change != '') change += ' and consent changed'; else change += 'Device group "' + mesh.name + '" consent changed'; changesids.push(4); mesh.consent = command.consent; }
                     if ((common.validateInt(command.expireDevs, 0, 2000) == true) && (command.expireDevs != mesh.expireDevs)) { if (change != '') change += ' and auto-remove changed'; else change += 'Device group "' + mesh.name + '" auto-remove changed'; changesids.push(5); if (command.expireDevs == 0) { delete mesh.expireDevs; } else { mesh.expireDevs = command.expireDevs; } }
+                    if ((common.validateInt(command.devicelimit, 0, 1000000) == true) && (command.devicelimit != (mesh.devicelimit ? mesh.devicelimit : 0))) { if (change != '') change += ' and device limit changed'; else change += 'Device group "' + mesh.name + '" device limit changed'; changesids.push(8); if (command.devicelimit == 0) { delete mesh.devicelimit; } else { mesh.devicelimit = command.devicelimit; } }
 
                     var oldRelayNodeId = null, newRelayNodeId = null;
                     if ((typeof command.relayid == 'string') && ((mesh.mtype == 3) || (mesh.mtype == 4)) && (mesh.relayid != null) && (command.relayid != mesh.relayid)) {
@@ -2444,7 +2445,7 @@ module.exports.CreateMeshUser = function (parent, db, ws, req, args, domain, use
 
                     if (change != '') {
                         db.Set(mesh);
-                        var event = { etype: 'mesh', userid: user._id, username: user.name, meshid: mesh._id, name: mesh.name, mtype: mesh.mtype, desc: mesh.desc, flags: mesh.flags, consent: mesh.consent, action: 'meshchange', links: mesh.links, msgid: 142, msgArgs: [mesh.name, changesids], msg: change, domain: domain.id, invite: mesh.invite, expireDevs: command.expireDevs, relayid: mesh.relayid };
+                        var event = { etype: 'mesh', userid: user._id, username: user.name, meshid: mesh._id, name: mesh.name, mtype: mesh.mtype, desc: mesh.desc, flags: mesh.flags, consent: mesh.consent, action: 'meshchange', links: mesh.links, msgid: 142, msgArgs: [mesh.name, changesids], msg: change, domain: domain.id, invite: mesh.invite, expireDevs: command.expireDevs, devicelimit: (mesh.devicelimit ? mesh.devicelimit : 0), relayid: mesh.relayid };
                         if (db.changeStream) { event.noact = 1; } // If DB change stream is active, don't use this event to change the mesh. Another event will come.
                         parent.parent.DispatchEvent(parent.CreateMeshDispatchTargets(mesh, [user._id, 'server-editmesh']), obj, event);
                     }

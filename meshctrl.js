@@ -681,6 +681,7 @@ if (args['_'].length == 0) {
                         console.log("  --invitecodes [aa,bb]  - Comma separated list of invite codes, blank to clear.");
                         console.log("    --backgroundonly     - When used with invitecodes, set agent to only install in background.");
                         console.log("    --interactiveonly    - When used with invitecodes, set agent to only run on demand.");
+                        console.log("  --devicelimit [number] - Maximum number of devices in this group, 0 for no limit.");
                         break;
                     }
                     case 'movetodevicegroup': {
@@ -1647,6 +1648,10 @@ function serverConnect() {
                 if (args.consent != null) {
                     var consent = parseInt(args.consent);
                     if (typeof consent == 'number') { op.consent = consent; }
+                }
+                if (args.devicelimit != null) {
+                    var devicelimit = parseInt(args.devicelimit);
+                    if (isNaN(devicelimit) == false) { op.devicelimit = devicelimit; }
                 }
                 ws.send(JSON.stringify(op));
                 break;
