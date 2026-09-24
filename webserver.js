@@ -503,7 +503,7 @@ module.exports.CreateWebServer = function (parent, db, args, certificates, doneF
             }
         }
         obj.agentIssues.push([new Date().toLocaleString(), addrport, issue]);
-        while (obj.setAgentIssue.length > 50) { obj.agentIssues.shift(); }
+        while (obj.agentIssues.length > 50) { obj.agentIssues.shift(); } // Was obj.setAgentIssue.length, the arity of the function, so this list never got trimmed
     }
     obj.agentIssues = [];
 
