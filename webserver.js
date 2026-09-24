@@ -252,6 +252,7 @@ module.exports.CreateWebServer = function (parent, db, args, certificates, doneF
     obj.wsagentsDisconnections = {};
     obj.wsagentsDisconnectionsTimer = null;
     obj.duplicateAgentsLog = {};
+    obj.meshLimitReachedLog = {};              // Last time we logged an event about a device refused by a device group limit, by nodeid.
     obj.wssessions = {};              // UserId --> Array Of Sessions
     obj.wssessions2 = {};             // "UserId + SessionRnd" --> Session  (Note that the SessionId is the UserId + / + SessionRnd)
     obj.wsPeerSessions = {};          // ServerId --> Array Of "UserId + SessionRnd"

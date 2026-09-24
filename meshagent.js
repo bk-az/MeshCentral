@@ -873,6 +873,16 @@ module.exports.CreateMeshAgent = function (parent, db, ws, req, args, domain) {
                     parent.agentStats.maxMeshDevicesReached++;
                     parent.setAgentIssue(obj, 'maxMeshDevicesReached');
                     parent.parent.debug('agent', 'Agent connected to a device group at its device limit (' + count + '/' + mesh.devicelimit + '), holding connection (' + obj.remoteaddrport + ', ' + obj.dbMeshKey + ').');
+
+                    // Log an event about the refused device. A refused agent keeps retrying, so only log once an hour for a given device.
+                    // Unlike when a device is added, temporary agents are logged too, a refused device is worth knowing about in all cases.
+                    const now = Date.now(), lastLimitEvent = parent.meshLimitReachedLog[obj.dbNodeKey];
+                    if ((lastLimitEvent == null) || ((now - lastLimitEvent) > 3600000)) {
+                        // Drop stale entries so this table does not grow forever
+                        if (Object.keys(parent.meshLimitReachedLog).length > 1000) { for (var i in parent.meshLimitReachedLog) { if ((now - parent.meshLimitReachedLog[i]) > 3600000) { delete parent.meshLimitReachedLog[i]; } } }
+                        parent.meshLimitReachedLog[obj.dbNodeKey] = now;
+                        parent.parent.DispatchEvent(parent.CreateMeshDispatchTargets(obj.dbMeshKey), obj, { etype: 'mesh', action: 'devicelimitreached', meshid: obj.dbMeshKey, name: mesh.name, nodeid: obj.dbNodeKey, remoteaddr: obj.remoteaddr, msgid: 165, msgArgs: [obj.agentInfo.computerName, mesh.name, mesh.devicelimit], msg: 'Device ' + obj.agentInfo.computerName + ' was not added to device group ' + mesh.name + ', the device limit of ' + mesh.devicelimit + ' was reached', domain: domain.id });
+                    }
                     return;
                 }
                 completeAgentConnection2ex(mesh);
