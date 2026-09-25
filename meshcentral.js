@@ -3353,11 +3353,11 @@ function CreateMeshCentralServer(config, args) {
                 // Load all agents when processing the default domain
                 agentpath = obj.path.join(__dirname, 'agents' + suffix, obj.meshAgentsArchitectureNumbers[archid].localname);
                 var agentpath2 = obj.path.join(obj.datapath, 'agents' + suffix, obj.meshAgentsArchitectureNumbers[archid].localname);
-                if (obj.fs.existsSync(agentpath2)) { agentpath = agentpath2; delete obj.meshAgentsArchitectureNumbers[archid].codesign; } // If the agent is present in "meshcentral-data/agents", use that one instead.
+                if (obj.fs.existsSync(agentpath2)) { delete obj.meshAgentsArchitectureNumbers[archid].codesign; signNextAgent(); return; } // If the agent is present in "meshcentral-data/agents", use that one as-is and do not sign it.
             } else {
                 // When processing an extra domain, only load agents that are specific to that domain
                 agentpath = obj.path.join(obj.datapath, 'agents' + suffix, obj.meshAgentsArchitectureNumbers[archid].localname);
-                if (obj.fs.existsSync(agentpath)) { delete obj.meshAgentsArchitectureNumbers[archid].codesign; } else { signNextAgent(); return; } // If the agent is not present in "meshcentral-data/agents" skip.
+                delete obj.meshAgentsArchitectureNumbers[archid].codesign; signNextAgent(); return; // Domain specific agents in "meshcentral-data/agents-<domain>" are used as-is and never signed.
             }
 
             // Open the original agent with authenticode
